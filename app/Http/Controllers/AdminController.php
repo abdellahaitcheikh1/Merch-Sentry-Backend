@@ -488,7 +488,9 @@ public function BloqueMagasin(Request $request){
 
                 return response()->json($account, 200);
 }
-
+public function testgit(){
+    dd("hahowa tsawb ");
+}
 
 
 }
