@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class detailCommande extends Model
 {
     use HasFactory;
+    protected $connection = 'mysql';
+
+    protected $table = 'detail_commandes';
     // public $timestamps = false;
     protected $fillable=[
         'idCommande',

@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::connection('mysql_second')->create('notification', function (Blueprint $table) {
             $table->id('id');
-            $table->unsignedBigInteger('IdRole');
+            $table->string('IdRole');
             $table->string('Notification_Title');
             $table->string('Notification_Content');
             $table->string('Statut')->default('not readable');
             $table->timestamp('Date');
-            $table->foreign('IdRole')->references('id')->on('role')->onDelete('cascade');
 
         });
     }

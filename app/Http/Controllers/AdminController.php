@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Dataarticle;
+use App\Models\demande;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\notificationzenpart;
@@ -120,6 +121,8 @@ public function getArticleById($id) {
 
 
 
+
+
 // function update Article 
 
 public function UpdateArticle($id){
@@ -211,98 +214,151 @@ public function GetNotificationAdminNoRead(){
 return response()->json($notifications, 200);
 } 
 
-public function verifyEmail(Request $request) {
-    $CompteEmail =$request->CompteEmail ;
-    $Password = $request->Password;
-    $accounts = DB::select('select * from utilisateur__accounts where email = ? and password = ?', [$CompteEmail, $Password]);
-    // If accounts exists
-    if ($accounts) {
-        $account = DB::select('select database_name, account_type from utilisateur__accounts where email = ?', [$CompteEmail]);
-        // If account data is retrieved
-        if (!empty($account)) {
-            $databaseName = $account[0]->database_name;
-            $accountType = $account[0]->account_type;
+public function verifyEmail(Request $request)
+{
+//     $CompteEmail = $request->input('CompteEmail');
+//     $Password = $request->Password;
 
-            // Fetch all databases
-            $databases = DB::select('SHOW DATABASES');
-            $databaseNames = array_map(function($db) {
-                return $db->Database;
-            }, $databases);
+//     $databases = DB::select('SHOW DATABASES');
+//     $databaseNames = array_map(function($db) {
+//         return $db->Database;
+//     }, $databases);
 
-            // Check if the specified database exists
-            if (in_array($databaseName, $databaseNames)) {
-                // Switch to the specified database connection
-                Config::set('database.connections.dynamic', [
-                    'driver' => 'mysql',
-                    'host' => '127.0.0.1',
-                    'port' => '3306',
-                    'database' => $databaseName,
-                    'username' => 'root',
-                    'password' => '',
-                ]);
+//     // Extract the part before the first point in $CompteEmail
+//     $emailBeforePoint = substr($CompteEmail, 0, strpos($CompteEmail, '.'));
 
-                // Fetch data based on account type
-                if ($accountType === 'magasins') {
-                    $MagasinsData = DB::connection('dynamic')->table('magasins')->where("email",$CompteEmail)->where('password', $Password)->get();
-                    foreach ($MagasinsData as $Magasin) 
-                    if($Magasin->status=="bloqué"){
-                        return response()->json(['message'=> 'magasin bloqué'], 200);
+//     // Extract the part after the first point in $CompteEmail and before the "@"
+//     $remainingPart = substr($CompteEmail, strpos($CompteEmail, '.') + 1);
+//     $emailAfterFirstPoint = substr($remainingPart, 0, strpos($remainingPart, '@'));
 
-                    }
-                    return response()->json(['message'=> 'magasins' ,"account"=>$Magasin], 200);
-                
-                } elseif ($accountType === 'commercials') {
-                    
-                    $CommercialData = DB::connection('dynamic')->table('commercials')->where("email",$CompteEmail)->where('password', $Password)->get();
-                foreach ($CommercialData as $commercial)
-                // if($Magasin->status=="bloqué"){
-                //     return response()->json(['message'=> 'magasin bloqué'], 200);
+//     // Extract the part after the first point but before the next point if it exists
+//     $emailAfterPoint = strtok($emailAfterFirstPoint, '.');
 
-                // } 
-                    return response()->json(['message'=> 'commercials' ,"account"=>$commercial], 200);
-                } elseif ($accountType === 'clients') {
-                    $ClientData = DB::connection('dynamic')->table('clients')->where("EmailClient",$CompteEmail)->where('PasswordClient', $Password)->get();
-                    foreach ($ClientData as $Client) 
-                    // if($Client->status=="bloqué"){
-                    //     return response()->json(['message'=> 'magasin bloqué'], 200);
+//     $matchFound = false;
+
+//     // Check if any database name contains "magasin_" followed by the part before the first point in $CompteEmail
+//     foreach ($databaseNames as $databaseName) {
+//         if (strpos($databaseName, 'magasin_') !== false) {
+//             $databasePart = substr($databaseName, strpos($databaseName, 'magasin_') + strlen('magasin_'));
+//             if ($emailBeforePoint === $databasePart) {
+//                 $matchFound = true;
+//                 Config::set('database.connections.dynamic', [
+//                                     'driver' => 'mysql',
+//                                     'host' => '127.0.0.1',
+//                                     'port' => '3306',
+//                                     'database' => $databaseName,
+//                                     'username' => 'root',
+//                                     'password' => '',
+//                                 ]);
+//                 // Check the part after the first point in the email
+//                 if ($emailAfterPoint === 'magasin') {
+//                     $magasinAccount = DB::connection('dynamic')->table('magasins')->where("email",$CompteEmail)->where('password', $Password)->get();
+//                     foreach ($magasinAccount as $magasin) {
+//                         return response()->json(['message' => 'magasin', "account" => $magasin], 200);
+//                     }
+//                 } elseif ($emailAfterPoint === 'commercial') {
+//                     $CommercialAccount = DB::connection('dynamic')->table('commercials')->where("email",$CompteEmail)->where('password', $Password)->get();
+//                     foreach ($CommercialAccount as $commercial) {
+//                             return response()->json(['message' => 'commercials', "account" => $commercial], 200);
+//                         }
+//                 }elseif ($emailAfterPoint === 'client') {
+//                     $ClientAccount = DB::connection('dynamic')->table('clients')->where("EmailClient",$CompteEmail)->where('PasswordClient', $Password)->get();
+//                     foreach ($ClientAccount as $client) {
+//                         return response()->json(['message' => 'client', "account" => $client], 200);
+//                     }                } 
+//                 else {
+//                     return response()->json(['message' => 'No account']);
+//                 }
+//             }
+//         }
+//     }
+
+//     if (!$matchFound) {
+//         return response()->json(['message' => 'The parts do not match.']);
+//     }
+// }
     
-                    // } 
-                
-                    return response()->json(['message'=> 'clients' ,"account"=>$Client], 200);;
-                } elseif ($accountType === 'admin') {
-                    return response()->json(['message'=> 'admin'], 200);
-                } else {
-                    return response()->json("Unknown account type: " . $accountType, 400);
+$CompteEmail = $request->input('CompteEmail');
+    $Password = $request->input('Password');
+
+    $account = DB::table('utilisateur__accounts')
+              ->where('email', $CompteEmail)
+              ->where('password', $Password)
+              ->first();
+
+    // Check if user exists
+    if ($account) {
+        $databaseName = $account->database_name;
+        $AccountType = $account->Account_type;
+        if($databaseName=="pro_stock"){
+            return response()->json(["message"=>'admin'], 200);
+
+        }else{
+
+            // Change the database connection dynamically
+            config(['database.connections.dynamic_mysql' => [
+                'driver' => 'mysql',
+                'host' => '127.0.0.1',
+                'port' => '3306',
+                'database' => $databaseName,
+                'username' => 'root',
+                'password' =>'',
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+            ]]);
+    
+            DB::purge('dynamic_mysql');
+            DB::setDefaultConnection('dynamic_mysql');
+            if($AccountType=="magasins"){
+ $magasins = DB::table('magasins')->get();
+                foreach($magasins as $magasin){
+                    if($magasin->status =="bloqué"){
+                    return response()->json(["message"=>'magasin bloqué' ,"status"=>$magasin], 200);
+                        
+                    }else{
+                    return response()->json(["message"=>'magasins' ,"account"=>$magasin], 200);
                 }
-            } else {
-                return response()->json("Database '$databaseName' does not exist.", 404);
             }
-        } else {
-            return response()->json("No account found for email: $email", 404);
+            }elseif($AccountType=="commercials"){
+                $commercials = DB::table('commercials')->get();
+                foreach($commercials as $commercial){
+
+                    return response()->json(["message"=>'commercials' ,"account"=>$commercial], 200);
+                }
+            }elseif($AccountType=="clients"){
+                $clients = DB::table('clients')->get();
+                foreach($clients as $client){
+
+                    return response()->json(["message"=>'clients' ,"account"=>$client], 200);
+                }
+            }
+    
+           
+    
         }
     } else {
-        return response()->json(["message"=>"False information"], 200);
+        return response()->json(['message' => 'False information'], 200);
     }
+
 }
+
+
 public function GetArticleByMagasinId(Request $request){
     $id = $request->id ;
     $account = DB::table('utilisateur__accounts')->where('id', $id)->first();
 
-    if ($account && $this->databaseExists($account->database_name)) {
+    if ($account) {
         // Set the dynamic database connection
-        Config::set('database.connections.dynamic_mysql', [
+        config(['database.connections.dynamic_mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => '127.0.0.1',
+            'port' => '3306',
             'database' => $account->database_name,
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'username' => 'root',
+            'password' =>'',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
+        ]]);
 
         // Connect to the dynamic database
         DB::purge('dynamic_mysql');
@@ -346,25 +402,22 @@ public function GetCommercialByMagasinId(Request $request){
     $id = $request->id ;
     $account = DB::table('utilisateur__accounts')->where('id', $id)->first();
 
-    if ($account && $this->databaseExists($account->database_name)) {
+    if ($account) {
         // Set the dynamic database connection
-        Config::set('database.connections.dynamic_mysql', [
+        config(['database.connections.dynamic_mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => '127.0.0.1',
+            'port' => '3306',
             'database' => $account->database_name,
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'username' => 'root',
+            'password' =>'',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
+        ]]);
 
         // Connect to the dynamic database
         DB::purge('dynamic_mysql');
-        DB::reconnect('dynamic_mysql');
+        DB::setDefaultConnection('dynamic_mysql');
 
         // Query the stocks table
         $stocks = DB::connection('dynamic_mysql')->table('commercials')->get();
@@ -378,22 +431,18 @@ public function GetClientByMagasinId(Request $request){
     $id = $request->id ;
     $account = DB::table('utilisateur__accounts')->where('id', $id)->first();
 
-    if ($account && $this->databaseExists($account->database_name)) {
+    if ($account) {
         // Set the dynamic database connection
-        Config::set('database.connections.dynamic_mysql', [
+        config(['database.connections.dynamic_mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => '127.0.0.1',
+            'port' => '3306',
             'database' => $account->database_name,
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'username' => 'root',
+            'password' =>'',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
+        ]]);
         // Connect to the dynamic database
         DB::purge('dynamic_mysql');
         DB::reconnect('dynamic_mysql');
@@ -410,29 +459,21 @@ public function GetArticleByMagasin(Request $request){
     $id = $request->id ;
     $account = DB::table('utilisateur__accounts')->where('id', $id)->first();
 
-    if ($account && $this->databaseExists($account->database_name)) {
+    if ($account) {
         // Set the dynamic database connection
-        Config::set('database.connections.dynamic_mysql', [
+        config(['database.connections.dynamic_mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => '127.0.0.1',
+            'port' => '3306',
             'database' => $account->database_name,
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'username' => 'root',
+            'password' =>'',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => true,
-            'engine' => null,
-        ]);
-
-        // Connect to the dynamic database
+        ]]);
         DB::purge('dynamic_mysql');
         DB::reconnect('dynamic_mysql');
-
-        // Query the stocks table
         $stocks = DB::connection('dynamic_mysql')->table('clients')->get();
-
         return response()->json($stocks);
     } else {
         return response()->json(['error' => 'Database not found or account does not exist'], 404);
@@ -443,22 +484,22 @@ private function databaseExists($database_name) {
     return count($databases) > 0;
 }
 public function BloqueMagasin(Request $request){
-    $id = 1;
-    $account = DB::select('select database_name from utilisateur__accounts where id = ?', [$id]);
+    // Retrieve the id from the request
+    $id = $request->input('id');
     
-    // Step 2: Check if account data is retrieved
+    // Fetch the account associated with the given id
+    $account = DB::select('select database_name from utilisateur__accounts where id = ?', [$id]);
+
     if (!empty($account)) {
         $databaseName = $account[0]->database_name;
-    
-        // Fetch all databases
         $databases = DB::select('SHOW DATABASES');
         $databaseNames = array_map(function($db) {
             return $db->Database;
         }, $databases);
-    
-        // Step 3: Check if the specified database exists
+
+        // Check if the database exists
         if (in_array($databaseName, $databaseNames)) {
-            // Step 4: Set the new database connection configuration
+            // Set the dynamic database connection
             Config::set('database.connections.dynamic', [
                 'driver' => 'mysql',
                 'host' => '127.0.0.1',
@@ -467,27 +508,53 @@ public function BloqueMagasin(Request $request){
                 'username' => 'root',
                 'password' => '',
             ]);
-    
-            // Step 5: Make the dynamic connection the default connection
             DB::purge('mysql');
             DB::reconnect('dynamic');
-    
-            // Now you can query the magasins table in the specified database
+
+            // Fetch magasins and update their status
             $magasins = DB::connection('dynamic')->table('magasins')->get();
-    
-            // Print or return the results
             foreach ($magasins as $magasin) {
-                return response()->json($magasin, 200);; // Adjust to your actual column names
+                $newStatus = ($magasin->status === 'active') ? 'bloqué' : 'active';
+                DB::connection('dynamic')->table('magasins')
+                    ->where('id', $magasin->id)
+                    ->update(['status' => $newStatus]);
             }
+            return response()->json($magasins, 200);
         } else {
-            echo "Database not found.";
+            return response()->json(['error' => 'Database not found.'], 404);
         }
     } else {
-        echo "Account not found.";
+        return response()->json(['error' => 'Account not found.'], 404);
     }
-
-                return response()->json($account, 200);
 }
+public function infoMagasin(Request $request){
+    $id=$request->id;
+    $account = DB::table('utilisateur__accounts')->where('id', $id)->first();
+    if ($account) {
+        // Set the dynamic database connection
+        config(['database.connections.dynamic_mysql' => [
+            'driver' => 'mysql',
+            'host' => '127.0.0.1',
+            'port' => '3306',
+            'database' => $account->database_name,
+            'username' => 'root',
+            'password' =>'',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+        ]]);
+        DB::purge('dynamic_mysql');
+        DB::reconnect('dynamic_mysql');
+        $magasins = DB::connection('dynamic_mysql')->table('magasins')->get();
+        return response()->json($magasins);
+    } else {
+        return response()->json(['error' => 'Database not found or account does not exist'], 404);
+    }
+}
+Public function GetDemande(){
+    $demandes = demande::all();
+    return response()->json($demandes,200);
+}
+
 }
 
 

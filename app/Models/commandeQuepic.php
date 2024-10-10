@@ -30,6 +30,7 @@ class commandeQuepic extends Model
         'Ville',
         'Adresse',
         'TotalCommandeHT',
+        'Statut',
         'TotalCommandeTTC',
         'IdRepresentant',
         'NbreLines',

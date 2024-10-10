@@ -1,0 +1,2 @@
+{{-- Original: {{ $slot }} --}}
+abdellah,

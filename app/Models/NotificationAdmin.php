@@ -14,6 +14,7 @@ class NotificationAdmin extends Model
         'Notification_Content',
         'Statut',
         'Date',
+        'url',
     ];
    
     
